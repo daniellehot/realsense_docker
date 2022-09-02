@@ -1,7 +1,26 @@
-import pyrealsense2 as rs
+from importlib.resources import path
+from re import X
 import numpy as np
-import cv2
 import random as rnd
+import cv2
+
+
+#width = 1920
+#height = 1080
+ids = np.linspace(1,500, num=500)
+species = []
+for id in ids:
+    if id <=100:
+        species.append("cod")
+    elif id <= 200:
+        species.append("haddock")
+    elif id <= 300:
+        species.append("pollock")
+    elif id <= 400:
+        species.append("whitting")
+    else:
+        species.append("other")
+
 
 def generate_patches(sum, height, width):
     patch_height = int(height/sum)
@@ -34,7 +53,6 @@ def generate_positions(sum, patches):
     return coordinates
 
 
-# THIS HAS TO BE RUN ONLY ONCE
 def draw_points(coordinates, img):
     
     rnd.shuffle(ids)
@@ -42,15 +60,24 @@ def draw_points(coordinates, img):
         colour = (rnd.randint(0,255), rnd.randint(0,255), rnd.randint(0,255))
         cv2.circle(img, (coordinate[1], coordinate[0]), 5, colour, -1)
         cv2.putText(img, str(int(id)), (coordinate[1]+5, coordinate[0]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colour, 1, cv2.LINE_AA, False)
-    cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
     cv2.imshow("guide", img)
-    cv2.waitKey(1)
+    cv2.waitKey()
+
+    """
+    rnd.shuffle(species)
+    for (coordinate, fish) in zip(coordinates, species):
+        colour = (rnd.randint(0,255), rnd.randint(0,255), rnd.randint(0,255))
+        cv2.circle(img, (coordinate[1], coordinate[0]), 5, colour, -1)
+        cv2.putText(img, fish, (coordinate[1]+5, coordinate[0]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colour, 1, cv2.LINE_AA, False)
+    cv2.imshow("guide", img)
+    cv2.waitKey()
+    """
     
 
 def draw_patches(patches, img):
     for patch in patches:
-        start_point = (patch[0], patch[1])
-        end_point = (patch[2], patch[3])
+        start_point = (patch[1], patch[0])
+        end_point = (patch[3], patch[2])
         cv2.rectangle(img, start_point, end_point, (0,0,0), 2 )
     return img
 
@@ -69,45 +96,24 @@ def remove_border_patches(patches, sum, patch_height, patch_width):
                     patches_to_remove.append(patch)
     
     patches_to_keep = list(set(patches) - set(patches_to_remove))
+    #print(patches_to_keep) 
+    #print(patches_to_remove)
+    #print(len(patches_to_remove))
+    #print(len(patches_to_keep))
     return patches_to_keep
 
+
 if __name__=="__main__":
-    img_width = 1920
-    img_height = 1080
-    ids = np.linspace(1,500, num=500)
-    sum = rnd.randint(4,15)
-    
-    # Setup a device and configure a color stream
-    pipeline = rs.pipeline()
-    config = rs.config()
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-    config.enable_stream(rs.stream.color, img_width, img_height, rs.format.bgr8, 30)
+    #img = cv2.imread("/home/daniel/generate_image_guide/conveyor_belt.jpg")
+    img = np.zeros([1080,1920,3],dtype=np.uint8)
+    img.fill(100) # or img[:] = 255
+    sum = rnd.randint(4,15) #4 is the minumum number, with 3 stuff breaks
+    #sum = 8
+    #print(sum)
+    patches, patch_height, patch_width = generate_patches(sum, img.shape[0], img.shape[1])
+    if sum > 5:
+        patches = remove_border_patches(patches, sum, patch_height, patch_width)
+    img = draw_patches(patches, img) 
+    coordinates = generate_positions(sum, patches)
+    draw_points(coordinates, img)
 
-    # Start streaming
-    pipeline.start(config)
-    patches, patch_height, patch_width = generate_patches(sum, img_width, img_height)
-    #if sum > 5:
-    #    patches = remove_border_patches(patches, sum, patch_height, patch_width)
-
-    try:
-        while True:
-
-            # Wait for a coherent pair of frames: depth and color
-            frames = pipeline.wait_for_frames()
-            #depth_frame = frames.get_depth_frame()
-            color_frame = frames.get_color_frame()
-            #if not depth_frame or not color_frame:
-            #   continue
-            if not color_frame:
-                continue
-
-            # Convert images to numpy arrays
-            #depth_image = np.asanyarray(depth_frame.get_data())
-            img = np.asanyarray(color_frame.get_data())
-            img = draw_patches(patches, img) 
-            coordinates = generate_positions(sum, patches)
-            draw_points(coordinates, img)
-    finally:
-        pipeline.stop()
