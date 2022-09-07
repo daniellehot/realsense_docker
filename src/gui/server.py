@@ -23,7 +23,7 @@ def listen_for_connections(server_socket):
         connection, address = server_socket.accept()
         connections.append(connection)
         if len(connections) == 2:
-            return connections
+            return connections 
 
 
 def handle_messages():
@@ -99,7 +99,7 @@ if __name__=="__main__":
             time.sleep(0.5)
             print(len(MSG_BUFFER))
             rsp=handle_messages()
-            if rsp!=None:
+            if rsp != None:
                 send_response(connections[1], rsp)
             if FLAG_EXIT == 1:
                 print("FLAG EXIT WAS RAISED")

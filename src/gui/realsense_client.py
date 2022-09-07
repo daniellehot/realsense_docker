@@ -3,9 +3,14 @@ import random as rnd
 import numpy as np
 import cv2
 import time
+import threading
 
 host = '127.0.0.1'
 port = 1234
+
+FLAG_SAVE = 0
+FLAG_SHUFFLE = 0
+FLAG_EXIT = 0
 
 
 def connect_to_the_server():
@@ -68,13 +73,30 @@ def generate_positions(sum, patches):
     return coordinates
 
 
-def handle_messages(msg):
-    return
 
+def handle_connection(sock):
+    global FLAG_EXIT, FLAG_SAVE, FLAG_SHUFFLE
+    while True:
+        data = sock.recv(2048)
+        msg = data.decode()
+        if msg == 'rs_save':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 1, 0, 0
+            #print("save")
+        elif msg == 'rs_shuffle':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 1, 0
+            #print("shuffle")
+        elif msg == 'rs_exit':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 0, 1
+            break
+            #print("exit")
 
 
 if __name__=="__main__":
-    #sock = connect_to_the_server()
+    sock = connect_to_the_server()
+    print("Connected Realsense client")
+    thread = threading.Thread(target=handle_connection, args=(sock,))
+    thread.start()
+
     img_width = 1920
     img_height = 1080
 
@@ -84,20 +106,29 @@ if __name__=="__main__":
 
     try:
         while True:
-            print("Connected Realsense client")
-            sum = rnd.randint(4,15)
-            patches, patch_height, patch_width = generate_patches(sum, img_width, img_height)
-            #msg = sock.recv(2048)
-            #handle_messages(msg.decode())
             img = np.zeros([img_height,img_width,3],dtype=np.uint8)
             img.fill(100) # or img[:] = 255
             #img = np.asanyarray(color_frame.get_data())
-            img = draw_patches(patches, img) 
-            coordinates = generate_positions(sum, patches)
-            draw_points(coordinates, img)
+            if FLAG_SAVE:
+                FLAG_SAVE = 0
+                print("saving annotations and image")
+            if FLAG_SHUFFLE:
+                FLAG_SHUFFLE = 0
+                sum = rnd.randint(4,15)
+                patches, patch_height, patch_width = generate_patches(sum, img_width, img_height)
+                img = draw_patches(patches, img) 
+                coordinates = generate_positions(sum, patches)
+                draw_points(coordinates, img)
+            if FLAG_EXIT:
+                FLAG_EXIT = 0
+                cv2.destroyAllWindows()
+                thread.join()
+                sock.close()
+                exit(5)     
             #print(msg.decode())
             time.sleep(1.0)
     finally:
-        #sock.close()
+        thread.join()
+        sock.close()
         exit(5)
         
