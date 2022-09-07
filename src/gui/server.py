@@ -1,5 +1,3 @@
-from ctypes.wintypes import MSG
-from random import shuffle
 import threading
 import socket
 import time
@@ -12,11 +10,8 @@ MSG_BUFFER = []
 
 
 def create_socket():
-    # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Bind the socket to the port
     sock.bind((host, port))
-    # Listen for incoming connections
     sock.listen(2)
     print(f'Server is listing on the port {port}...')
     return sock
