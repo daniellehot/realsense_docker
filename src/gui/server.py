@@ -1,3 +1,4 @@
+from ctypes.wintypes import MSG
 from random import shuffle
 import threading
 import socket
@@ -6,9 +7,8 @@ import time
 
 host = '127.0.0.1'
 port = 1234
-GUI_STATUS = -1
-REALSENSE_STATUS = -1
-FLAG_EXIT_THREAD = 0
+FLAG_EXIT = 0
+MSG_BUFFER = []
 
 
 def create_socket():
@@ -31,22 +31,42 @@ def listen_for_connections(server_socket):
             return connections
 
 
-def handle_status(msg):
-    if msg == 'save':
-        # SEND MESSAGE TO REALSENSE SERVER
-    elif msg == 'shuffle':
-        # SEND MESSAGE TO REALSENSE SERVER 
-    else msg == 'exit':
-        return KeyboardInterrupt
-
+def handle_messages():
+    global FLAG_EXIT
+    global MSG_BUFFER
+    if len(MSG_BUFFER)>0:
+        msg = MSG_BUFFER[0]
+        rsp = None
+        if msg == 'save':
+            rsp = 'rs_save'.encode()
+            MSG_BUFFER.pop(0) 
+        elif msg == 'shuffle':
+            rsp = 'rs_shuffle'.encode()
+            MSG_BUFFER.pop(0) 
+        elif msg == 'exit':
+            rsp = 'rs_exit'.encode()
+            MSG_BUFFER.clear()
+            FLAG_EXIT = 1
+        else:
+            print("Undefined messaged received by the server")
+        return rsp
+    else:
+        return None
         
 
+def send_response(connection, msg):
+    connection.sendall(msg)
+
+
 def client_handler(connection):
+    global MSG_BUFFER
     while True:
         data = connection.recv(2048)
         message = data.decode('utf-8')
-        print(message)
-        if FLAG_EXIT_THREAD:
+        MSG_BUFFER.append(message)
+        #print(message)
+        #resp = handle_message(message)
+        if FLAG_EXIT:
             break
         
 
@@ -55,31 +75,55 @@ def multithread_connections(connections):
     for connection in connections:
         thread = threading.Thread(target=client_handler, args=(connection,))
         threads.append(thread)
-        thread.daemon = True
+        #thread.daemon = True
         thread.start()
     return threads
 
 
-def close_connections(connections):
+def exit_program(threads, connections):
+    for thread in threads:
+            print("Killing threads")
+            thread.join()
     for connection in connections:
+        print("Closing connection   ")
         connection.close()
+    exit()
 
 
 if __name__=="__main__":
     sock = create_socket()
     connections = listen_for_connections(sock)
-    print("two connections")
+    #print(connections)
+    #print("two connections")
     threads = multithread_connections(connections)
-    print(threads)
-    print(len(threads))
+    #print(threads)
+    #print(len(threads))
 
+    while True:
+        try:    
+            time.sleep(0.5)
+            print(len(MSG_BUFFER))
+            rsp=handle_messages()
+            if rsp!=None:
+                send_response(connections[1], rsp)
+            if FLAG_EXIT == 1:
+                print("FLAG EXIT WAS RAISED")
+                exit_program(threads, connections)
+        except:
+            exit_program(threads, connections)    
+    
+    """    
     try:
         while True:    
-            print("NEW")
+            #print("NEW")
             time.sleep(1.0)
+            print(len(MSG_BUFFER))
+            rsp=handle_messages()
+            if rsp!=None:
+                send_response(connections[1], rsp)
+            if FLAG_EXIT == 1:
+                print("FLAG EXIT WAS RAISED")
+                exit_program(threads, connections)     
     finally:
-        FLAG_EXIT_THREAD = 1
-        for thread in threads:
-            thread.join()
-        close_connections(connections)
-   
+        exit_program(threads, connections)
+    """

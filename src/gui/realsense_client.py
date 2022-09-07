@@ -1,5 +1,6 @@
 import socket
-import time 
+import time
+
 
 host = '127.0.0.1'
 port = 1234
@@ -15,9 +16,5 @@ print("Connected")
 
 while 1:
     print("Connected Realsense")
-    message = 'gdxg'.encode()
-    try:
-        ClientSocket.sendall(message)
-    except:
-        print("Something wrong")
-    time.sleep(1.0)
+    msg = ClientSocket.recv(2048)
+    print(msg.decode())
