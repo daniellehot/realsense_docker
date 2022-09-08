@@ -23,8 +23,8 @@ def send_save_message(sock):
     try:
         sock.sendall(message)
         print("save message")
-    except:
-        print("Something wrong")
+    except Exception as e: 
+        print(e)
 
 
 def send_exit_message(sock):
@@ -34,8 +34,8 @@ def send_exit_message(sock):
     try:
         sock.sendall(message)
         print('exit message')
-    except:
-        print("Something wrong")
+    except Exception as e: 
+        print(e)
 
 
 def send_shuffle_message(sock):
@@ -43,8 +43,8 @@ def send_shuffle_message(sock):
     try:
         sock.sendall(message)
         print('shuffle message')
-    except:
-        print("Something wrong")
+    except Exception as e: 
+        print(e)
 
 
 if __name__=="__main__":

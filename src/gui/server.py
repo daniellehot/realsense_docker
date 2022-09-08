@@ -3,13 +3,13 @@ import socket
 import time
 
 
-host = '127.0.0.1'
-port = 1234
 FLAG_EXIT = 0
 MSG_BUFFER = []
 
 
 def create_socket():
+    host = '127.0.0.1'
+    port = 1234
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((host, port))
     sock.listen(2)
@@ -104,7 +104,8 @@ if __name__=="__main__":
             if FLAG_EXIT == 1:
                 print("FLAG EXIT WAS RAISED")
                 exit_program(threads, connections)
-        except:
+        except Exception as e: 
+            print(e)
             exit_program(threads, connections)    
     
     """    

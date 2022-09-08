@@ -1,4 +1,3 @@
-from asyncio.windows_utils import pipe
 import socket
 import random as rnd
 import numpy as np
@@ -46,17 +45,6 @@ def handle_connection(sock):
         elif msg == 'rs_exit':
             FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 0, 1
             break
-
-
-def setup_realsense_pipeline(img_width, img_height):
-    pipeline = rs.pipeline()
-    config = rs.config()
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-    config.enable_stream(rs.stream.color, img_width, img_height, rs.format.bgr8, 30)
-    pipeline.start(config)
-    return pipeline
 
 
 def save_data(img, sum, coordinates, ids):
@@ -155,7 +143,6 @@ if __name__=="__main__":
 
     img_width = 1920
     img_height = 1080
-    pipeline = setup_realsense_pipeline(img_width, img_height)
 
     patches = None
     coordinates = None
@@ -165,12 +152,9 @@ if __name__=="__main__":
     FLAG_SHUFFLE = 1
     try:
         while True:
-            frames = pipeline.wait_for_frames()
-            color_frame = frames.get_color_frame()
-            if not color_frame:
-                continue
-            img = np.asanyarray(color_frame.get_data())
-
+            img = np.zeros([img_height,img_width,3],dtype=np.uint8)
+            img.fill(rnd.randint(0, 255)) # or img[:] = 255
+            #img = np.asanyarray(color_frame.get_data())
             if FLAG_SAVE:
                 print("FLAG_SAVE")
                 FLAG_SAVE = 0
@@ -201,7 +185,6 @@ if __name__=="__main__":
     except Exception as e: 
         print(e)
     finally:
-        pipeline.stop()
         thread.join()
         sock.close()
         exit(5)
