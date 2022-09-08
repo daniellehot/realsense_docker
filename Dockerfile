@@ -20,6 +20,7 @@ RUN apt-get install -y librealsense2-utils
 RUN apt-get install -y librealsense2-dev
 RUN apt-get install -y librealsense2-dbg
 RUN apt-get install -y nano
+RUN apt-get install -y python3-tk.
 RUN apt-get autoremove
 RUN apt-get autoclean
 
@@ -30,4 +31,9 @@ COPY src/requirements.txt requirements.txt
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir -r requirements.txt
 COPY src/main.py  main.py
+COPY src/gui/server.py server.py
+COPY src/gui/gui_client.py gui_client.py 
+COPY src/gui/realsense_client.py realsense_client.py
+COPY src/gui/launcher.sh launcher.sh
+RUN chmod +x launcher.sh
 #CMD [ "python3", "src/main.py"]

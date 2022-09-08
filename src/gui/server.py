@@ -8,13 +8,18 @@ MSG_BUFFER = []
 
 
 def create_socket():
+    # ADDRESS ALREADY IN USE ERROR - https://stackoverflow.com/questions/19071512/socket-error-errno-48-address-already-in-use
     host = '127.0.0.1'
     port = 1234
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((host, port))
-    sock.listen(2)
-    print(f'Server is listing on the port {port}...')
-    return sock
+    try:
+        sock.bind((host, port))
+        sock.listen(2)
+        print(f'Server is listing on the port {port}...')
+        return sock
+    except socket.error as e:
+        print(str(e))
+        exit(-1)
 
 
 def listen_for_connections(server_socket):
@@ -96,7 +101,7 @@ if __name__=="__main__":
 
     while True:
         try:    
-            time.sleep(0.5)
+            #time.sleep(0.5)
             print(len(MSG_BUFFER))
             rsp=handle_messages()
             if rsp != None:

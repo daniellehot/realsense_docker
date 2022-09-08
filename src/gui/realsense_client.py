@@ -1,4 +1,3 @@
-from asyncio.windows_utils import pipe
 import socket
 import random as rnd
 import numpy as np
@@ -6,6 +5,7 @@ import cv2
 import time
 import threading
 import os
+import pyrealsense2 as rs
 
 
 FLAG_SAVE = 0
@@ -18,7 +18,6 @@ def create_folders():
         os.mkdir("data")
         os.mkdir("data/images")
         os.mkdir("data/annotations")
-
 
 
 def connect_to_the_server():
@@ -60,28 +59,28 @@ def setup_realsense_pipeline(img_width, img_height):
 
 
 def save_data(img, sum, coordinates, ids):
-    print("save_data")
+    #print("save_data")
     filename = str(int(time.time()))
-    img_path = "/home/daniel/realsense_docker/data/images/" + filename + '.jpeg'
-    print(img_path)
-    annotation_path = "/home/daniel/realsense_docker/data/annotations/" + filename + '.csv'
-    print("1")
+    img_path = "data/images/" + filename + '.jpeg'
+    #print(img_path)
+    annotation_path = "data/annotations/" + filename + '.csv'
+    #print("1")
     #save_path_annotations = r"/home/daniel/realsense_docker/data/annotations/"
-    print("2")
+    #print("2")
     #img_filename = str(int(time.time())) + '.jpeg'
-    print("3")
+    #print("3")
     #annotation_filename = str(int(time.time())) + '.csv'
-    print("4")
+    #print("4")
     cv2.imwrite(img_path, img)
     annotations = np.zeros((sum, 3))
     for i in range(sum):
         annotations[i,0] = coordinates[i][0] 
         annotations[i,1] = coordinates[i][1]
         annotations[i,2] = ids[i]
-    print(sum )
-    print(annotations.shape)
+    #print(sum )
+    #print(annotations.shape)
     np.savetxt(annotation_path, annotations, delimiter=",")
-    print("5")
+    #print("5")
 
 
 def generate_patches(sum, width, height):
@@ -172,7 +171,7 @@ if __name__=="__main__":
             img = np.asanyarray(color_frame.get_data())
 
             if FLAG_SAVE:
-                print("FLAG_SAVE")
+                #print("FLAG_SAVE")
                 FLAG_SAVE = 0
                 save_data(img, sum, coordinates, ids)
                 #print("saving annotations and image")
@@ -186,7 +185,7 @@ if __name__=="__main__":
                 colours = generate_colours(sum)
                 rnd.shuffle(ids)
             if FLAG_EXIT:
-                print("FLAG_EXIT")
+                #print("FLAG_EXIT")
                 FLAG_EXIT = 0
                 cv2.destroyAllWindows()
                 thread.join()
@@ -196,8 +195,8 @@ if __name__=="__main__":
                 img = draw_patches(patches, img)
                 img = draw_points(coordinates, colours, ids, img) 
             show_img(img)
-            cv2.imwrite("check.jpeg", img)
-            time.sleep(0.5)
+            #cv2.imwrite("check.jpeg", img)
+            #time.sleep(0.5)
     except Exception as e: 
         print(e)
     finally:
