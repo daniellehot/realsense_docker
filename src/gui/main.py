@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import random as rnd
 
+
 def generate_patches(sum, height, width):
     patch_height = int(height/sum)
     patch_width = int(width/sum)

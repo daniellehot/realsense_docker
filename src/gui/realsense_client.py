@@ -5,8 +5,6 @@ import cv2
 import time
 import threading
 
-host = '127.0.0.1'
-port = 1234
 
 FLAG_SAVE = 0
 FLAG_SHUFFLE = 0
@@ -14,6 +12,8 @@ FLAG_EXIT = 0
 
 
 def connect_to_the_server():
+    host = '127.0.0.1'
+    port = 1234
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((host, port))
@@ -21,6 +21,21 @@ def connect_to_the_server():
     except socket.error as e:
         print(str(e))
         exit(-1)
+
+
+def handle_connection(sock):
+    global FLAG_EXIT, FLAG_SAVE, FLAG_SHUFFLE
+    while True:
+        data = sock.recv(2048)
+        msg = data.decode()
+        print(msg)
+        if msg == 'rs_save':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 1, 0, 0
+        elif msg == 'rs_shuffle':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 1, 0
+        elif msg == 'rs_exit':
+            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 0, 1
+            break
 
 
 def generate_patches(sum, width, height):
@@ -40,25 +55,6 @@ def generate_patches(sum, width, height):
     return patches, patch_height, patch_width
 
 
-def draw_points(coordinates, img):
-    rnd.shuffle(ids)
-    for (coordinate, id) in zip(coordinates, ids):
-        colour = (rnd.randint(0,255), rnd.randint(0,255), rnd.randint(0,255))
-        cv2.circle(img, (coordinate[1], coordinate[0]), 5, colour, -1)
-        cv2.putText(img, str(int(id)), (coordinate[1]+5, coordinate[0]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colour, 1, cv2.LINE_AA, False)
-    cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-    cv2.imshow('RealSense', img)
-    cv2.waitKey(1)
-    
-
-def draw_patches(patches, img):
-    for patch in patches:
-        start_point = (patch[0], patch[1])
-        end_point = (patch[2], patch[3])
-        cv2.rectangle(img, start_point, end_point, (0,0,0), 2 )
-    return img
-
-
 def generate_positions(sum, patches):
     #generate_patch size
     coordinates = []
@@ -73,22 +69,37 @@ def generate_positions(sum, patches):
     return coordinates
 
 
+def generate_colours(sum):
+    colours = []
+    for i in range(sum):
+        colour = (rnd.randint(0,255), rnd.randint(0,255), rnd.randint(0,255))
+        colours.append(colour)
+    return colours
 
-def handle_connection(sock):
-    global FLAG_EXIT, FLAG_SAVE, FLAG_SHUFFLE
-    while True:
-        data = sock.recv(2048)
-        msg = data.decode()
-        if msg == 'rs_save':
-            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 1, 0, 0
-            #print("save")
-        elif msg == 'rs_shuffle':
-            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 1, 0
-            #print("shuffle")
-        elif msg == 'rs_exit':
-            FLAG_SAVE, FLAG_SHUFFLE, FLAG_EXIT = 0, 0, 1
-            break
-            #print("exit")
+
+def draw_patches(patches, img):
+    print("draw_patches")
+    for patch in patches:
+        start_point = (patch[0], patch[1])
+        end_point = (patch[2], patch[3])
+        cv2.rectangle(img, start_point, end_point, (0,0,0), 2 )
+    return img
+
+
+def draw_points(coordinates, colours, ids, img):
+    print("draw_points")
+    #rnd.shuffle(ids)
+    for (coordinate, colour, id) in zip(coordinates, colours, ids):
+        img = cv2.circle(img, (coordinate[1], coordinate[0]), 5, colour, -1)
+        img = cv2.putText(img, str(int(id)), (coordinate[1]+5, coordinate[0]+5), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colour, 1, cv2.LINE_AA, False)
+    return img
+
+
+def show_img(img):
+    cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
+    cv2.imshow('RealSense', img)
+    cv2.waitKey(1)
+
 
 
 if __name__=="__main__":
@@ -100,33 +111,41 @@ if __name__=="__main__":
     img_width = 1920
     img_height = 1080
 
+    patches = None
+    coordinates = None
+    colours = None 
     ids = np.linspace(1,500, num=500)
-    #if sum > 5:
-    #    patches = remove_border_patches(patches, sum, patch_height, patch_width)
-
     try:
         while True:
             img = np.zeros([img_height,img_width,3],dtype=np.uint8)
-            img.fill(100) # or img[:] = 255
+            img.fill(rnd.randint(0, 255)) # or img[:] = 255
             #img = np.asanyarray(color_frame.get_data())
             if FLAG_SAVE:
+                print("FLAG_SAVE")
                 FLAG_SAVE = 0
                 print("saving annotations and image")
             if FLAG_SHUFFLE:
                 FLAG_SHUFFLE = 0
                 sum = rnd.randint(4,15)
+                #if sum > 5:
+                    #patches = remove_border_patches(patches, sum, patch_height, patch_width)
                 patches, patch_height, patch_width = generate_patches(sum, img_width, img_height)
-                img = draw_patches(patches, img) 
                 coordinates = generate_positions(sum, patches)
-                draw_points(coordinates, img)
+                colours = generate_colours(sum)
+                rnd.shuffle(ids)
             if FLAG_EXIT:
+                print("FLAG_EXIT")
                 FLAG_EXIT = 0
                 cv2.destroyAllWindows()
                 thread.join()
                 sock.close()
                 exit(5)     
             #print(msg.decode())
-            time.sleep(1.0)
+            if patches != None and coordinates != None and colours != None:
+                img = draw_patches(patches, img)
+                img = draw_points(coordinates, colours, ids, img) 
+            show_img(img)
+            time.sleep(0.5)
     finally:
         thread.join()
         sock.close()

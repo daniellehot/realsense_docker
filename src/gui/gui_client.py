@@ -2,9 +2,20 @@ import socket
 import tkinter as tk
 from tkinter import ttk
 
+
 FLAG_KILL_GUI = 0
-host = '127.0.0.1'
-port = 1234
+
+
+def connect_to_the_server():
+    host = '127.0.0.1'
+    port = 1234
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((host, port))
+        return sock 
+    except socket.error as e:
+        print(str(e))
+        exit(-1)
 
 
 def send_save_message(sock):
@@ -34,16 +45,6 @@ def send_shuffle_message(sock):
         print('shuffle message')
     except:
         print("Something wrong")
-
-
-def connect_to_the_server():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((host, port))
-        return sock 
-    except socket.error as e:
-        print(str(e))
-        exit(-1)
 
 
 if __name__=="__main__":
