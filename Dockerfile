@@ -35,5 +35,6 @@ COPY src/gui/server.py server.py
 COPY src/gui/gui_client.py gui_client.py 
 COPY src/gui/realsense_client.py realsense_client.py
 COPY src/gui/launcher.sh launcher.sh
+COPY src/check_height.py check_height.py
 RUN chmod +x launcher.sh
 #CMD [ "python3", "src/main.py"]
